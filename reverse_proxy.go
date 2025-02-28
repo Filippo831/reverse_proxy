@@ -19,7 +19,12 @@ var PORT int = 8081
 func main() {
 	fmt.Sprintln("starting reverse proxy at port %d", PORT)
 
-	demoURL, err := url.Parse("https://127.17.0.1:8096")
+    // jellyfin
+	demoURL, err := url.Parse("http://127.17.0.1:8096")
+
+    // my demo server
+	// demoURL, err := url.Parse("http://127.1.0.1:8088")
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,7 +42,10 @@ func main() {
 		tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 		http2.ConfigureTransport(tr)
 
-		resp, err := http.DefaultClient.Do(r)
+        client := &http.Client{Transport: tr, Timeout: 10 * time.Second}
+
+		resp, err := client.Do(r)
+		// resp, err := http.DefaultClient.Do(r)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -47,6 +55,7 @@ func main() {
 
 		for key, values := range resp.Header {
 			for _, value := range values {
+				// log.Printf("%s : %s", key, value)
 				w.Header().Add(key, value)
 			}
 		}
@@ -77,13 +86,27 @@ func main() {
 			}
 		}
 
-		w.WriteHeader(resp.StatusCode)
+        /*
+        if the url changed (redirect happened), write the field Location into the
+        response to make the client change the url as well
+        */
+
+        if resp.Request.URL.String() != r.URL.String() {
+            w.Header().Add("Location", resp.Request.URL.Path)
+            w.WriteHeader(http.StatusSeeOther)
+        } else {
+            w.WriteHeader(resp.StatusCode)
+        }
+
 		io.Copy(w, resp.Body)
 
 		close(done)
 	})
 
-	if err := http.ListenAndServeTLS(":8081", "reverse_proxy.rsa.crt", "reverse_proxy.rsa.key", proxy); err != nil {
+	// if err := http.ListenAndServeTLS(":8081", "reverse_proxy.rsa.crt", "reverse_proxy.rsa.key", proxy); err != nil {
+	// 	log.Fatal(err)
+	// }
+	if err := http.ListenAndServe(":8081", proxy); err != nil {
 		log.Fatal(err)
 	}
 }
