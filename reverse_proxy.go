@@ -11,17 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/websocket"
+    "github.com/Filippo831/reverse_proxy/internal"
+
 	"golang.org/x/net/http2"
 )
 
 var PORT int = 8081
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
 
 func main() {
 	fmt.Sprintln("starting reverse proxy at port %d", PORT)
@@ -49,54 +45,13 @@ func main() {
 		tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 		http2.ConfigureTransport(tr)
 
-        for key, values := range r.Header {
-            for _, value := range values {
-                fmt.Printf("%s: %s\n", key, value)
-            }
-        }
 		client := &http.Client{Transport: tr, Timeout: 10 * time.Second}
 
 		// if websocket enter here
 		if r.Header.Get("Upgrade") == "websocket" {
-            r.URL.Scheme = "ws"
-			fmt.Printf("request to websocket protocol\n")
-			conn_to_server, _, err_to_server := websocket.DefaultDialer.Dial(r.URL.String(), nil)
-			conn_to_client, err_to_client := upgrader.Upgrade(w, r, nil)
-
-			if err_to_server != nil {
-				log.Println(err_to_server)
-				return
-			}
-			if err_to_client != nil {
-				log.Println(err_to_client)
-				return
-			}
-			go func() {
-				for {
-					msgType, msg, err := conn_to_server.ReadMessage()
-                    fmt.Printf("received message from server\n")
-					if err != nil {
-						log.Println(err_to_client)
-						break
-					}
-					conn_to_client.WriteMessage(msgType, msg)
-				}
-			}()
-
-			go func() {
-				for {
-					msgType, msg, err := conn_to_client.ReadMessage()
-                    fmt.Printf("received message from client\n")
-					if err != nil {
-						log.Println(err_to_client)
-						break
-					}
-					conn_to_server.WriteMessage(msgType, msg)
-				}
-			}()
-
-			// handleWebsocket(w, r)
+            handle_websocket(w , r)
 		} else {
+            test_http_handler()
 			resp, err := client.Do(r)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
