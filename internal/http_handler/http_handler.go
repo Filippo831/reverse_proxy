@@ -1,7 +1,7 @@
-package internal
+package http_handler
 
 import "fmt"
 
-func test_http_handler() {
+func Test_http_handler() {
     fmt.Print("test from http_handler")
 }

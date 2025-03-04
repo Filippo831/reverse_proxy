@@ -1,4 +1,4 @@
-package internal
+package websocket_handler 
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func handle_websocket(w http.ResponseWriter, r *http.Request) {
+func Handle_websocket(w http.ResponseWriter, r *http.Request) {
 	r.URL.Scheme = "ws"
 	fmt.Printf("request to websocket protocol\n")
 	conn_to_server, _, err_to_server := websocket.DefaultDialer.Dial(r.URL.String(), nil)

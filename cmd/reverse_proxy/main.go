@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-    "github.com/Filippo831/reverse_proxy/internal"
+	"github.com/Filippo831/reverse_proxy/internal/http_handler"
+	"github.com/Filippo831/reverse_proxy/internal/websocket_handler"
 
 	"golang.org/x/net/http2"
 )
 
 var PORT int = 8081
-
 
 func main() {
 	fmt.Sprintln("starting reverse proxy at port %d", PORT)
@@ -49,9 +49,9 @@ func main() {
 
 		// if websocket enter here
 		if r.Header.Get("Upgrade") == "websocket" {
-            handle_websocket(w , r)
+			websocket_handler.Handle_websocket(w, r)
 		} else {
-            test_http_handler()
+			http_handler.Test_http_handler()
 			resp, err := client.Do(r)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
