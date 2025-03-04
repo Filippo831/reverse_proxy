@@ -1,23 +1,41 @@
 package main
 
 import (
-	"crypto/tls"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/Filippo831/reverse_proxy/internal/http_handler"
 	"github.com/Filippo831/reverse_proxy/internal/websocket_handler"
-
-	"golang.org/x/net/http2"
 )
 
 var PORT int = 8081
+
+func run_http(proxy http.HandlerFunc) {
+	server := &http.Server{Addr: ":8081", ReadTimeout: 5 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, Handler: proxy}
+
+	server.SetKeepAlivesEnabled(false)
+
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatal(err)
+	}
+	// if err := http.ListenAndServe(":8088", nil); err != nil {
+	// 	log.Fatal(err)
+	// }
+}
+
+func run_https(proxy http.HandlerFunc) {
+	server := &http.Server{Addr: ":8082", ReadTimeout: 5 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, Handler: proxy}
+	if err := server.ListenAndServeTLS("reverse_proxy.com+3.pem", "reverse_proxy.com+3-key.pem"); err != nil {
+		log.Fatal(err)
+	}
+	// if err := http.ListenAndServeTLS(":8089", , nil); err != nil {
+	// 	log.Fatal(err)
+	// }
+}
 
 func main() {
 	fmt.Sprintln("starting reverse proxy at port %d", PORT)
@@ -26,7 +44,7 @@ func main() {
 	// demoURL, err := url.Parse("http://127.17.0.1:8096")
 
 	// my demo server
-	demoURL, err := url.Parse("http://127.1.0.1:8088")
+	demoURL, err := url.Parse("https://127.0.0.1:8089")
 
 	if err != nil {
 		log.Fatal(err)
@@ -42,79 +60,15 @@ func main() {
 		client_host, _, _ := net.SplitHostPort(r.RemoteAddr)
 		r.Header.Set("X-Forwarded-For", client_host)
 
-		tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-		http2.ConfigureTransport(tr)
-
-		client := &http.Client{Transport: tr, Timeout: 10 * time.Second}
-
 		// if websocket enter here
 		if r.Header.Get("Upgrade") == "websocket" {
 			websocket_handler.Handle_websocket(w, r)
 		} else {
-			http_handler.Test_http_handler()
-			resp, err := client.Do(r)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprint(w, err)
-				return
-			}
-			// resp, err := http.DefaultClient.Do(r)
-			for key, values := range resp.Header {
-				for _, value := range values {
-					// log.Printf("%s : %s", key, value)
-					w.Header().Add(key, value)
-				}
-			}
-
-			done := make(chan bool)
-			go func() {
-				for {
-					select {
-					case <-time.Tick(10 * time.Millisecond):
-						w.(http.Flusher).Flush()
-					case <-done:
-						return
-					}
-				}
-			}()
-
-			trailerKeys := []string{}
-
-			for key := range resp.Trailer {
-				trailerKeys = append(trailerKeys, key)
-			}
-
-			w.Header().Set("Trailer", strings.Join(trailerKeys, ","))
-
-			for key, values := range resp.Trailer {
-				for _, value := range values {
-					w.Header().Set(key, value)
-				}
-			}
-
-			/*
-			   if the url changed (redirect happened), write the field Location into the
-			   response to make the client change the url as well
-			*/
-
-			if resp.Request.URL.String() != r.URL.String() {
-				w.Header().Add("Location", resp.Request.URL.Path)
-				w.WriteHeader(http.StatusSeeOther)
-			} else {
-				w.WriteHeader(resp.StatusCode)
-			}
-
-			io.Copy(w, resp.Body)
-
-			close(done)
+			http_handler.Http_handler(w, r)
 		}
 
 	})
 
-	// if err := http.ListenAndServeTLS(":8081", "reverse_proxy.rsa.crt", "reverse_proxy.rsa.key", proxy); err != nil {
-	// 	log.Fatal(err)
-	// }
-	if err := http.ListenAndServe(":8081", proxy); err != nil {
-		log.Fatal(err)
-	}
+	go run_http(proxy)
+	run_https(proxy)
 }

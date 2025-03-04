@@ -1,2 +1,4 @@
 reverse_proxy.rsa.crt
 reverse_proxy.rsa.key
+reverse_proxy.com+3-key.pem
+reverse_proxy.com+3.pem

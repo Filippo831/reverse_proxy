@@ -15,7 +15,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func Handle_websocket(w http.ResponseWriter, r *http.Request) {
-	r.URL.Scheme = "ws"
+	r.URL.Scheme = "wss"
 	fmt.Printf("request to websocket protocol\n")
 	conn_to_server, _, err_to_server := websocket.DefaultDialer.Dial(r.URL.String(), nil)
 	conn_to_client, err_to_client := upgrader.Upgrade(w, r, nil)
