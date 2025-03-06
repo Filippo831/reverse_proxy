@@ -1,7 +1,6 @@
 package http_handler
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,10 +10,9 @@ import (
 	"golang.org/x/net/http2"
 )
 
-func Http_handler(w http.ResponseWriter, r *http.Request) {
-    tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-    http2.ConfigureTransport(tr)
-	client := &http.Client{Transport: tr, Timeout: 10 * time.Second}
+func HttpHandler(w http.ResponseWriter, r *http.Request) {
+	http2.ConfigureTransport(http.DefaultTransport.(*http.Transport))
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(r)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
