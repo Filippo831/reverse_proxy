@@ -1,8 +1,10 @@
 package http_handler
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -10,15 +12,28 @@ import (
 	"golang.org/x/net/http2"
 )
 
-func HttpHandler(w http.ResponseWriter, r *http.Request) {
+func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect int) {
 	http2.ConfigureTransport(http.DefaultTransport.(*http.Transport))
-	client := &http.Client{Timeout: 10 * time.Second}
+
+	client := &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		maxRedirect := 10
+		if configurationRedirect != 0 {
+			maxRedirect = configurationRedirect
+		}
+		if len(via) >= maxRedirect {
+			log.Printf("stopped after %d redirects\n", maxRedirect)
+            return errors.New(fmt.Sprintf("stopped after %d redirects\n", maxRedirect))
+		}
+		return nil
+	}}
 	resp, err := client.Do(r)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, err)
 		return
 	}
+
 	// resp, err := http.DefaultClient.Do(r)
 	for key, values := range resp.Header {
 		for _, value := range values {
@@ -37,7 +52,7 @@ func HttpHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-	}()
+}()
 
 	trailerKeys := []string{}
 

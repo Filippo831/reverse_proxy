@@ -17,6 +17,7 @@ type Server struct {
     Location Location `json:"location"`
     SslCertificate string `json:"ssl_certificate"`
     SslCertificateKey string `json:"ssl_certificate_key"`
+    MaxRedirect int `json:"max_redirect"`
 }
 
 type Location struct {
@@ -24,7 +25,9 @@ type Location struct {
     To string `json:"to"`
 }
 
-func ReadConfiguration(filePath string) Configuration {
+var Conf Configuration
+
+func ReadConfiguration(filePath string) {
     jsonFile, err := os.Open(filePath)
 
     if err != nil {
@@ -37,14 +40,9 @@ func ReadConfiguration(filePath string) Configuration {
         log.Fatal(err)
     }
 
-    var configuration Configuration
-
-    readingJsonErr := json.Unmarshal(byteValue, &configuration)
+    readingJsonErr := json.Unmarshal(byteValue, &Conf)
 
     if readingJsonErr != nil {
         log.Fatal(err)
     }
-
-    
-    return configuration
 }
