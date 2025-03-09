@@ -22,7 +22,7 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect i
 		}
 		if len(via) >= maxRedirect {
 			log.Printf("stopped after %d redirects\n", maxRedirect)
-            return errors.New(fmt.Sprintf("stopped after %d redirects\n", maxRedirect))
+			return errors.New(fmt.Sprintf("stopped after %d redirects\n", maxRedirect))
 		}
 		return nil
 	}}
@@ -52,7 +52,7 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect i
 				return
 			}
 		}
-}()
+	}()
 
 	trailerKeys := []string{}
 

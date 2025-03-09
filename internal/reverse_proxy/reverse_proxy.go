@@ -1,6 +1,7 @@
 package reverseproxy
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"net/url"
@@ -13,7 +14,7 @@ import (
 	"github.com/Filippo831/reverse_proxy/internal/websocket_handler"
 )
 
-func RunReverseProxy(conf_path string) {
+func RunReverseProxy(conf_path string) error {
 	log.Printf("starting reverse proxy\n")
 
 	var wg sync.WaitGroup
@@ -26,6 +27,7 @@ func RunReverseProxy(conf_path string) {
 
 		if err != nil {
 			log.Fatal(err)
+			return errors.New("error parsing redirectURL")
 		}
 
 		proxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,9 +44,16 @@ func RunReverseProxy(conf_path string) {
 
 		wg.Add(1)
 
-		go runserver.RunServer(proxy, server.Port, 5, 10, 60, server.SslCertificate, server.SslCertificateKey, &wg)
+        errs := make(chan error, 1)
+		go func() {
+			errs <- runserver.RunServer(proxy, server.Port, 5, 10, 60, server.SslCertificate, server.SslCertificateKey, server.SslToClient, &wg)
+		}()
+		if err := <-errs; err != nil {
+            return err
+		}
 	}
 
 	wg.Wait()
+    return nil
 
 }
