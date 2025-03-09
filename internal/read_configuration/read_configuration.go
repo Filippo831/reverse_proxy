@@ -15,6 +15,7 @@ type Server struct {
     Port int `json:"port"`
     ServerName string `json:"server_name"`
     Location Location `json:"location"`
+    SslToClient bool `json:"ssl_to_client"`
     SslCertificate string `json:"ssl_certificate"`
     SslCertificateKey string `json:"ssl_certificate_key"`
     MaxRedirect int `json:"max_redirect"`
