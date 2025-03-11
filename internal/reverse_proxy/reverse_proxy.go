@@ -1,11 +1,11 @@
 package reverseproxy
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"net/url"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/Filippo831/reverse_proxy/internal/http_handler"
@@ -22,15 +22,22 @@ func RunReverseProxy(conf_path string) error {
 	readconfiguration.ReadConfiguration(conf_path)
 
 	for _, server := range readconfiguration.Conf.Http {
-		// redirectURL, err := url.Parse("https://127.0.0.1:8089")
-		redirectURL, err := url.Parse(server.Location.To)
-
-		if err != nil {
-			log.Fatal(err)
-			return errors.New("error parsing redirectURL")
-		}
-
+        // TODO: make a base url for 404-ish error. This will be the base url that show up if no matches is found under location list
+		redirectURL, _ := url.Parse("https://127.0.0.1:8089")
 		proxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+            // get the host name from the request and based on the subdomain redirect to the right url
+
+			domain := r.Host
+			domain = strings.Split(domain, ":")[0]
+
+
+			for _, location := range server.Location {
+				if domain == location.Domain {
+					redirectURL, _ = url.Parse(location.To)
+				}
+			}
+
 			r = http_handler.HttpRedirect(redirectURL, r)
 
 			// check if the client wants to change the connection to a websocket
@@ -42,18 +49,20 @@ func RunReverseProxy(conf_path string) error {
 
 		})
 
+        // every server adds 1 to this counter to keep track of how many go routine are running
 		wg.Add(1)
 
-        errs := make(chan error, 1)
+        // run the server in a goroutine
+		errs := make(chan error, 1)
 		go func() {
 			errs <- runserver.RunServer(proxy, server.Port, 5, 10, 60, server.SslCertificate, server.SslCertificateKey, server.SslToClient, &wg)
 		}()
 		if err := <-errs; err != nil {
-            return err
+			return err
 		}
 	}
 
 	wg.Wait()
-    return nil
+	return nil
 
 }

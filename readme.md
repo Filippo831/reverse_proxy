@@ -5,6 +5,7 @@
 ## under implementation features 
 - reading configuration from json file
 - handle http/https/websocket communication
+- subdomain handling
 
 ## future implementation
 - caching
