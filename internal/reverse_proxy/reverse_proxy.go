@@ -19,7 +19,11 @@ func RunReverseProxy(conf_path string) error {
 
 	var wg sync.WaitGroup
 
-	readconfiguration.ReadConfiguration(conf_path)
+    err := readconfiguration.ReadConfiguration(conf_path)
+    if err != nil {
+        log.Print(err)
+        return err
+    }
 
 	for _, server := range readconfiguration.Conf.Http {
         // TODO: make a base url for 404-ish error. This will be the base url that show up if no matches is found under location list
