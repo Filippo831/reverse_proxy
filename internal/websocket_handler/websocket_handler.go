@@ -41,7 +41,6 @@ func Handle_websocket(w http.ResponseWriter, r *http.Request, sslToClient bool, 
 	go func() {
 		for {
 			msgType, msg, err := conn_to_server.ReadMessage()
-            log.Printf("server sent: %s\n", msg)
 			if err != nil {
 				log.Println(err)
 				break
@@ -53,7 +52,6 @@ func Handle_websocket(w http.ResponseWriter, r *http.Request, sslToClient bool, 
 	go func() {
 		for {
 			msgType, msg, err := conn_to_client.ReadMessage()
-            log.Printf("client sent:%s\n", msg)
 			if err != nil {
 				log.Println(err)
 				break

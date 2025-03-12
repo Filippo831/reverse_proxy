@@ -19,22 +19,21 @@ func RunReverseProxy(conf_path string) error {
 
 	var wg sync.WaitGroup
 
-    err := readconfiguration.ReadConfiguration(conf_path)
-    if err != nil {
-        log.Print(err)
-        return err
-    }
+	err := readconfiguration.ReadConfiguration(conf_path)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
 
 	for _, server := range readconfiguration.Conf.Http {
-        // TODO: make a base url for 404-ish error. This will be the base url that show up if no matches is found under location list
+		// TODO: make a base url for 404-ish error. This will be the base url that show up if no matches is found under location list
 		redirectURL, _ := url.Parse("https://127.0.0.1:8089")
+
 		proxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-            // get the host name from the request and based on the subdomain redirect to the right url
-
+			// get the host name from the request and based on the subdomain redirect to the right url
 			domain := r.Host
 			domain = strings.Split(domain, ":")[0]
-
 
 			for _, location := range server.Location {
 				if domain == location.Domain {
@@ -53,17 +52,18 @@ func RunReverseProxy(conf_path string) error {
 
 		})
 
-        // every server adds 1 to this counter to keep track of how many go routine are running
+		// every server adds 1 to this counter to keep track of how many go routine are running
 		wg.Add(1)
 
-        // run the server in a goroutine
+		// run the server in a goroutine
 		errs := make(chan error, 1)
 		go func() {
+			log.Printf("running server under domain %s and port %d", server.ServerName, server.Port)
 			errs <- runserver.RunServer(proxy, server.Port, 5, 10, 60, server.SslCertificate, server.SslCertificateKey, server.SslToClient, &wg)
+			if err := <-errs; err != nil {
+				log.Fatal(err)
+			}
 		}()
-		if err := <-errs; err != nil {
-			return err
-		}
 	}
 
 	wg.Wait()

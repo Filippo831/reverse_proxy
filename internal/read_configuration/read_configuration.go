@@ -79,8 +79,10 @@ func ReadConfiguration(filePath string) error {
     err = checks(&Conf) 
     
     if err != nil {
+        log.Fatal(err)
         return err
     }
+
 	return nil
 }
 
@@ -114,7 +116,15 @@ func checkKeys(conf *Configuration) error {
 
 func checkDomain(conf *Configuration) error {
 	for serverKey, server := range conf.Http {
+        subdomains := make(map[string]bool)
 		for _, location := range server.Location {
+            _, ok := subdomains[location.Domain]
+            if ok {
+                return errors.New(fmt.Sprintf("conflicting domain in server %d: %s\n", serverKey, location.Domain))
+            } else {
+                subdomains[location.Domain] = true
+            }
+
 			locationDomainArray := strings.Split(location.Domain, ".")
 			locationDomain := locationDomainArray[len(locationDomainArray)-1]
 

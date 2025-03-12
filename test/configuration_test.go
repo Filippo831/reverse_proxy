@@ -33,3 +33,11 @@ func TestDifferentSubdomains(t *testing.T) {
 		t.Errorf("expected: server number 0 domain: localhost\nlocation domain: gianni\n found: %s", err)
 	}
 }
+
+func TestConflictSubdomain(t *testing.T) {
+    err := readconfiguration.ReadConfiguration("configurations/conflicting_subdomains.json")
+
+	if fmt.Sprint(err) != "conflicting domain in server 0: gianni.localhost\n" {
+		t.Errorf("expected: conflicting domain in server 0: gianni.localhost\n: %s", err)
+	}
+}

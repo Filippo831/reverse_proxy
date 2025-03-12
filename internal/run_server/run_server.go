@@ -1,8 +1,6 @@
 package runserver
 
 import (
-	"errors"
-	"log"
 	"net/http"
 	"sync"
 )

@@ -26,6 +26,7 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect i
 		}
 		return nil
 	}}
+
 	resp, err := client.Do(r)
 
 	if err != nil {
@@ -41,6 +42,7 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect i
 			w.Header().Add(key, value)
 		}
 	}
+    
 
 	done := make(chan bool)
 	go func() {
@@ -72,6 +74,8 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect i
 	   if the url changed (redirect happened), write the field Location into the
 	   response to make the client change the url as well
 	*/
+
+    fmt.Printf("resp.Header: %v\n", resp.Header)
 
 	if resp.Request.URL.String() != r.URL.String() {
 		w.Header().Add("Location", resp.Request.URL.Path)
