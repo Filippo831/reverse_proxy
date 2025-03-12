@@ -4,3 +4,4 @@ reverse_proxy.com+3-key.pem
 reverse_proxy.com+3.pem
 configuration*.json
 test_log_file.log
+configurations/

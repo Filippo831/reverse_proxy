@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 type Configuration struct {
@@ -46,34 +47,53 @@ type Location struct {
 
 var Conf Configuration
 
+
 // TODO: make actual check instead of raising only an error to understand why there is an error
 // TODO: create test for this
 func ReadConfiguration(filePath string) error {
+
 	jsonFile, err := os.Open(filePath)
 
 	if err != nil {
 		log.Fatal(err)
+        return err
 	}
 
 	byteValue, err := io.ReadAll(jsonFile)
 
 	if err != nil {
 		log.Fatal(err)
+        return err
 	}
 
-	readingJsonErr := json.Unmarshal(byteValue, &Conf)
+    newConf := Configuration{}
+
+	readingJsonErr := json.Unmarshal(byteValue, &newConf)
+
+    Conf = newConf
 
 	if readingJsonErr != nil {
 		log.Fatal(err)
+        return err
 	}
+    err = checks(&Conf) 
+    
+    if err != nil {
+        return err
+    }
 	return nil
 }
 
 func checks(conf *Configuration) error {
-    err := checkKeys(conf)
-    if err != nil {
-        return err
-    }
+	err := checkKeys(conf)
+	if err != nil {
+		return err
+	}
+
+	err = checkDomain(conf)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -89,5 +109,19 @@ func checkKeys(conf *Configuration) error {
 			return errors.New(fmt.Sprintf("ssl parameters set even if ssl is selected to false in server %d", key))
 		}
 	}
-    return nil
+	return nil
+}
+
+func checkDomain(conf *Configuration) error {
+	for serverKey, server := range conf.Http {
+		for _, location := range server.Location {
+			locationDomainArray := strings.Split(location.Domain, ".")
+			locationDomain := locationDomainArray[len(locationDomainArray)-1]
+
+			if locationDomain != server.ServerName {
+				return errors.New(fmt.Sprintf("server number %d domain: %s\nlocation domain: %s\n", serverKey, server.ServerName, locationDomain))
+			}
+		}
+	}
+	return nil
 }
