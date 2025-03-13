@@ -1,10 +1,10 @@
 package http_handler
 
 import (
-	"errors"
+	// "errors"
 	"fmt"
 	"io"
-	"log"
+	// "log"
 	"net/http"
 	"strings"
 	"time"
@@ -15,16 +15,23 @@ import (
 func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect int) {
 	http2.ConfigureTransport(http.DefaultTransport.(*http.Transport))
 
-	client := &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
-		maxRedirect := 10
-		if configurationRedirect != 0 {
-			maxRedirect = configurationRedirect
-		}
-		if len(via) >= maxRedirect {
-			log.Printf("stopped after %d redirects\n", maxRedirect)
-			return errors.New(fmt.Sprintf("stopped after %d redirects\n", maxRedirect))
-		}
-		return nil
+
+    client := &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+
+        // TODO: try to implement cookie parsing with this function not returning ErrUseLastResponse
+
+		// maxRedirect := 10
+		//
+		// if configurationRedirect != 0 {
+		// 	maxRedirect = configurationRedirect
+		// }
+		//
+		// if len(via) >= maxRedirect {
+		// 	log.Printf("stopped after %d redirects\n", maxRedirect)
+		// 	return errors.New(fmt.Sprintf("stopped after %d redirects\n", maxRedirect))
+		// }
+		// return nil
+        return http.ErrUseLastResponse
 	}}
 
 	resp, err := client.Do(r)
@@ -42,7 +49,6 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect i
 			w.Header().Add(key, value)
 		}
 	}
-    
 
 	done := make(chan bool)
 	go func() {
@@ -75,14 +81,17 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect i
 	   response to make the client change the url as well
 	*/
 
-    fmt.Printf("resp.Header: %v\n", resp.Header)
+    // WARNING: this section underneath is needed to handle redirect policies
 
-	if resp.Request.URL.String() != r.URL.String() {
-		w.Header().Add("Location", resp.Request.URL.Path)
-		w.WriteHeader(http.StatusSeeOther)
-	} else {
-		w.WriteHeader(resp.StatusCode)
-	}
+	// if resp.Request.URL.String() != r.URL.String() {
+	// 	w.Header().Add("Location", resp.Request.URL.Path)
+	// 	w.WriteHeader(http.StatusSeeOther)
+	// } else {
+	// 	w.WriteHeader(resp.StatusCode)
+	// }
+
+
+    w.WriteHeader(resp.StatusCode)
 
 	io.Copy(w, resp.Body)
 
