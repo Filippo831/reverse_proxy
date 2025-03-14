@@ -28,13 +28,17 @@ type Server struct {
 	SslToClient bool `json:"ssl_to_client"`
 
 	// ssl certificate file path
-	SslCertificate string `json:"ssl_certificate"`
+    SslCertificate string `json:"ssl_certificate"` 
 
 	// ssl certificate key file path
 	SslCertificateKey string `json:"ssl_certificate_key"`
 
 	// highest amount of redirect that the reverse proxy will solve. After this threshold it raise an error
-	MaxRedirect int `json:"max_redirect"`
+    MaxRedirect int `json:"max_redirect"`
+
+    // enable or disable chunk encoding
+    // TODO: add constraint to chunk encoding (max_time, chunk_size)
+    ChunkEncoding bool `json:"chunk_encoding"`
 }
 
 type Location struct {
@@ -45,11 +49,10 @@ type Location struct {
 	To string `json:"to"`
 }
 
+
 var Conf Configuration
 
 
-// TODO: make actual check instead of raising only an error to understand why there is an error
-// TODO: create test for this
 func ReadConfiguration(filePath string) error {
 
 	jsonFile, err := os.Open(filePath)

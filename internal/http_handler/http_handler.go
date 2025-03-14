@@ -2,36 +2,43 @@ package http_handler
 
 import (
 	// "errors"
+	"errors"
 	"fmt"
 	"io"
+	"log"
+
 	// "log"
 	"net/http"
 	"strings"
 	"time"
 
+	readconfiguration "github.com/Filippo831/reverse_proxy/internal/read_configuration"
 	"golang.org/x/net/http2"
 )
 
-func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect int) {
+func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.Server) {
 	http2.ConfigureTransport(http.DefaultTransport.(*http.Transport))
 
+	client := &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 
-    client := &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		// default value of max redirect
+		maxRedirect := 10
 
-        // TODO: try to implement cookie parsing with this function not returning ErrUseLastResponse
+		if conf.MaxRedirect != 0 {
+			maxRedirect = conf.MaxRedirect
+		}
 
-		// maxRedirect := 10
-		//
-		// if configurationRedirect != 0 {
-		// 	maxRedirect = configurationRedirect
-		// }
-		//
-		// if len(via) >= maxRedirect {
-		// 	log.Printf("stopped after %d redirects\n", maxRedirect)
-		// 	return errors.New(fmt.Sprintf("stopped after %d redirects\n", maxRedirect))
-		// }
-		// return nil
-        return http.ErrUseLastResponse
+		if len(via) >= maxRedirect {
+			log.Printf("stopped after %d redirects\n", maxRedirect)
+			return errors.New(fmt.Sprintf("stopped after %d redirects\n", maxRedirect))
+		}
+
+		// if one of the intermidiate response send a cookie to set,
+		// write it on the final answer to the client, otherwise it get lost inside the redirects
+		if req.Response.Header.Get("Set-Cookie") != "" {
+			w.Header().Add("Set-Cookie", req.Response.Header.Get("Set-Cookie"))
+		}
+		return nil
 	}}
 
 	resp, err := client.Do(r)
@@ -51,16 +58,19 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect i
 	}
 
 	done := make(chan bool)
-	go func() {
-		for {
-			select {
-			case <-time.Tick(10 * time.Millisecond):
-				w.(http.Flusher).Flush()
-			case <-done:
-				return
+	if conf.ChunkEncoding {
+		go func() {
+			for {
+				select {
+                // TODO: define how to make the stream work, if based on time like here or based on blocksize
+				case <-time.Tick(10 * time.Millisecond):
+					w.(http.Flusher).Flush()
+				case <-done:
+					return
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	trailerKeys := []string{}
 
@@ -68,7 +78,9 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect i
 		trailerKeys = append(trailerKeys, key)
 	}
 
-	w.Header().Set("Trailer", strings.Join(trailerKeys, ","))
+	if len(trailerKeys) > 0 {
+		w.Header().Set("Trailer", strings.Join(trailerKeys, ","))
+	}
 
 	for key, values := range resp.Trailer {
 		for _, value := range values {
@@ -80,18 +92,14 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, configurationRedirect i
 	   if the url changed (redirect happened), write the field Location into the
 	   response to make the client change the url as well
 	*/
+	if resp.Request.URL.String() != r.URL.String() {
+		w.Header().Add("Location", resp.Request.URL.Path)
+		w.WriteHeader(http.StatusSeeOther)
+	} else {
+		w.WriteHeader(resp.StatusCode)
+	}
 
-    // WARNING: this section underneath is needed to handle redirect policies
-
-	// if resp.Request.URL.String() != r.URL.String() {
-	// 	w.Header().Add("Location", resp.Request.URL.Path)
-	// 	w.WriteHeader(http.StatusSeeOther)
-	// } else {
-	// 	w.WriteHeader(resp.StatusCode)
-	// }
-
-
-    w.WriteHeader(resp.StatusCode)
+	w.WriteHeader(resp.StatusCode)
 
 	io.Copy(w, resp.Body)
 

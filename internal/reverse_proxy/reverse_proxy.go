@@ -1,6 +1,7 @@
 package reverseproxy
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -26,20 +27,28 @@ func RunReverseProxy(conf_path string) error {
 	}
 
 	for _, server := range readconfiguration.Conf.Http {
-		// TODO: make a base url for 404-ish error. This will be the base url that show up if no matches is found under location list
-		redirectURL, _ := url.Parse("https://127.0.0.1:8089")
 
 		proxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            redirectURL, _ := url.Parse("https://127.0.0.1:8089")
+            found := false
 
 			// get the host name from the request and based on the subdomain redirect to the right url
 			domain := r.Host
 			domain = strings.Split(domain, ":")[0]
 
+
 			for _, location := range server.Location {
 				if domain == location.Domain {
 					redirectURL, _ = url.Parse(location.To)
+                    found = true
 				}
 			}
+
+            // message to send if the subdomain requested is not define into location list
+            if !found {
+                fmt.Fprintf(w, "subdomain not found")
+                return
+            }
 
 			r = http_handler.HttpRedirect(redirectURL, r)
 
@@ -47,7 +56,7 @@ func RunReverseProxy(conf_path string) error {
 			if r.Header.Get("Upgrade") == "websocket" && slices.Contains(r.Header.Values("Connection"), "Upgrade") {
 				websocket_handler.Handle_websocket(w, r, server.SslToClient, redirectURL.Scheme == "https")
 			} else {
-				http_handler.HttpHandler(w, r, server.MaxRedirect)
+				http_handler.HttpHandler(w, r, server)
 			}
 
 		})
