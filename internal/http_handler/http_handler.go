@@ -63,7 +63,7 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.
 			for {
 				select {
                 // TODO: define how to make the stream work, if based on time like here or based on blocksize
-				case <-time.Tick(10 * time.Millisecond):
+				case <-time.Tick(time.Duration(conf.ChunkTimeout) * time.Millisecond):
 					w.(http.Flusher).Flush()
 				case <-done:
 					return

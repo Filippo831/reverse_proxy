@@ -37,8 +37,13 @@ type Server struct {
     MaxRedirect int `json:"max_redirect"`
 
     // enable or disable chunk encoding
-    // TODO: add constraint to chunk encoding (max_time, chunk_size)
     ChunkEncoding bool `json:"chunk_encoding"`
+
+    // size of each chunk to be sent (this works on HTTP/1.1)
+    ChunkSize int `json:"chunk_size"`
+
+    // time to wait before a chunk is sent without waiting the buffer to fill
+    ChunkTimeout int `json:"chunk_timeout"`
 }
 
 type Location struct {
