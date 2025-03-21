@@ -57,21 +57,6 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.
 		}
 	}
 
-	done := make(chan bool)
-	if conf.ChunkEncoding {
-		go func() {
-			for {
-				select {
-                // TODO: define how to make the stream work, if based on time like here or based on blocksize
-				case <-time.Tick(time.Duration(conf.ChunkTimeout) * time.Millisecond):
-					w.(http.Flusher).Flush()
-				case <-done:
-					return
-				}
-			}
-		}()
-	}
-
 	trailerKeys := []string{}
 
 	for key := range resp.Trailer {
@@ -101,7 +86,11 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.
 
 	w.WriteHeader(resp.StatusCode)
 
-	io.Copy(w, resp.Body)
-
-	close(done)
+	if conf.ChunkEncoding {
+		chunkedWriter := ChunkedWriter(w, conf)
+		io.Copy(chunkedWriter, resp.Body)
+		chunkedWriter.Flush()
+	} else {
+		io.Copy(w, resp.Body)
+	}
 }

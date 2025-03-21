@@ -28,22 +28,22 @@ type Server struct {
 	SslToClient bool `json:"ssl_to_client"`
 
 	// ssl certificate file path
-    SslCertificate string `json:"ssl_certificate"` 
+	SslCertificate string `json:"ssl_certificate"`
 
 	// ssl certificate key file path
 	SslCertificateKey string `json:"ssl_certificate_key"`
 
 	// highest amount of redirect that the reverse proxy will solve. After this threshold it raise an error
-    MaxRedirect int `json:"max_redirect"`
+	MaxRedirect int `json:"max_redirect"`
 
-    // enable or disable chunk encoding
-    ChunkEncoding bool `json:"chunk_encoding"`
+	// enable or disable chunk encoding
+	ChunkEncoding bool `json:"chunk_encoding"`
 
-    // size of each chunk to be sent (this works on HTTP/1.1)
-    ChunkSize int `json:"chunk_size"`
+	// size of each chunk to be sent (this works on HTTP/1.1)
+	ChunkSize int `json:"chunk_size"`
 
-    // time to wait before a chunk is sent without waiting the buffer to fill
-    ChunkTimeout int `json:"chunk_timeout"`
+	// time to wait before a chunk is sent without waiting the buffer to fill
+	ChunkTimeout int `json:"chunk_timeout"`
 }
 
 type Location struct {
@@ -54,9 +54,7 @@ type Location struct {
 	To string `json:"to"`
 }
 
-
 var Conf Configuration
-
 
 func ReadConfiguration(filePath string) error {
 
@@ -64,32 +62,32 @@ func ReadConfiguration(filePath string) error {
 
 	if err != nil {
 		log.Fatal(err)
-        return err
+		return err
 	}
 
 	byteValue, err := io.ReadAll(jsonFile)
 
 	if err != nil {
 		log.Fatal(err)
-        return err
+		return err
 	}
 
-    newConf := Configuration{}
+	newConf := Configuration{}
 
 	readingJsonErr := json.Unmarshal(byteValue, &newConf)
 
-    Conf = newConf
+	Conf = newConf
 
 	if readingJsonErr != nil {
 		log.Fatal(err)
-        return err
+		return err
 	}
-    err = checks(&Conf) 
-    
-    if err != nil {
-        log.Fatal(err)
-        return err
-    }
+	err = checks(&Conf)
+
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
 
 	return nil
 }
@@ -104,18 +102,23 @@ func checks(conf *Configuration) error {
 	if err != nil {
 		return err
 	}
+
+	err = checkChunks(conf)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func checkKeys(conf *Configuration) error {
 	for key, server := range conf.Http {
 		if server.SslToClient && (server.SslCertificate == "" || server.SslCertificateKey == "") {
-			log.Printf("missing ssl parameter(s) in server %d", key)
+			// log.Printf("missing ssl parameter(s) in server %d", key)
 			return errors.New(fmt.Sprintf("missing ssl parameter(s) in server %d", key))
 
 		}
 		if !server.SslToClient && (server.SslCertificate != "" || server.SslCertificateKey != "") {
-			log.Printf("ssl parameters set even if ssl is selected to false in server %d", key)
+			// log.Printf("ssl parameters set even if ssl is selected to false in server %d", key)
 			return errors.New(fmt.Sprintf("ssl parameters set even if ssl is selected to false in server %d", key))
 		}
 	}
@@ -124,14 +127,14 @@ func checkKeys(conf *Configuration) error {
 
 func checkDomain(conf *Configuration) error {
 	for serverKey, server := range conf.Http {
-        subdomains := make(map[string]bool)
+		subdomains := make(map[string]bool)
 		for _, location := range server.Location {
-            _, ok := subdomains[location.Domain]
-            if ok {
-                return errors.New(fmt.Sprintf("conflicting domain in server %d: %s\n", serverKey, location.Domain))
-            } else {
-                subdomains[location.Domain] = true
-            }
+			_, ok := subdomains[location.Domain]
+			if ok {
+				return errors.New(fmt.Sprintf("conflicting domain in server %d: %s\n", serverKey, location.Domain))
+			} else {
+				subdomains[location.Domain] = true
+			}
 
 			locationDomainArray := strings.Split(location.Domain, ".")
 			locationDomain := locationDomainArray[len(locationDomainArray)-1]
@@ -139,6 +142,15 @@ func checkDomain(conf *Configuration) error {
 			if locationDomain != server.ServerName {
 				return errors.New(fmt.Sprintf("server number %d domain: %s\nlocation domain: %s\n", serverKey, server.ServerName, locationDomain))
 			}
+		}
+	}
+	return nil
+}
+
+func checkChunks(conf *Configuration) error {
+	for serverKey, server := range conf.Http {
+		if server.ChunkSize < 8 && server.ChunkEncoding {
+			return errors.New(fmt.Sprintf("wrong chunk size in server %d: %dkb while lower value is 8kb\n", serverKey, server.ChunkSize))
 		}
 	}
 	return nil

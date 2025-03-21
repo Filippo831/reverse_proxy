@@ -38,6 +38,14 @@ func TestConflictSubdomain(t *testing.T) {
     err := readconfiguration.ReadConfiguration("configurations/conflicting_subdomains.json")
 
 	if fmt.Sprint(err) != "conflicting domain in server 0: gianni.localhost\n" {
-		t.Errorf("expected: conflicting domain in server 0: gianni.localhost\n: %s", err)
+		t.Errorf("expected: conflicting domain in server 0: gianni.localhost\nfound: %s", err)
+	}
+}
+
+func TestWrongChunkSize(t *testing.T) {
+    err := readconfiguration.ReadConfiguration("configurations/wrong_chunk_size.json")
+
+	if fmt.Sprint(err) != "wrong chunk size in server 0: 4kb while lower value is 8kb\n" {
+        t.Errorf("expected: wrong chunk size in server 0: 4kb while lower value is 8kb\nfound: %s", err)
 	}
 }
