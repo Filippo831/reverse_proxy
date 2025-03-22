@@ -4,7 +4,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"testing"
 
@@ -13,10 +12,7 @@ import (
 
 
 func TestRedirectLessThanThreshold(t *testing.T) {
-	configuration := ` { "servers": [ { "port": 8081, "server_name": "127.0.0.1","max_redirect": 10 ,"Location": { "path": "/", "to": "http://127.0.0.1:8080" } }] } `
-	os.WriteFile("configuration_test.json", []byte(configuration), 0644)
-
-    go reverseproxy.RunReverseProxy("configuration_test.json")    
+    go reverseproxy.RunReverseProxy("configurations/test_redirect_less.json")
 
 	direct_resp, direct_err := http.Get("http://127.0.0.1:8080/redirect/9")
 
@@ -24,11 +20,12 @@ func TestRedirectLessThanThreshold(t *testing.T) {
 		t.Errorf("%s", direct_err)
 	}
 
-	proxy_resp, proxy_err := http.Get("http://127.0.0.1:8081/redirect/9")
+    proxy_resp, proxy_err := http.Get("http://redirect.localhost:8081/redirect/9")
 
 	if proxy_err != nil {
-		t.Errorf("%s", direct_err)
+		t.Errorf("%s", proxy_err)
 	}
+
 	if proxy_resp.Header.Get("Location") != direct_resp.Header.Get("Location") {
 		t.Errorf("redirect Location does not correspond\nproxy: %s\ndirect: %s\n", proxy_resp.Header.Get("Location"), direct_resp.Header.Get("Location"))
 	}
@@ -36,10 +33,7 @@ func TestRedirectLessThanThreshold(t *testing.T) {
 }
 
 func TestRedirectMoreThanThreshold(t *testing.T) {
-	configuration := ` { "servers": [ { "port": 8081, "server_name": "127.0.0.1","max_redirect": 10 ,"Location": { "path": "/", "to": "http://127.0.0.1:8080" } }] } `
-	os.WriteFile("configuration_test.json", []byte(configuration), 0644)
-
-    // go reverseproxy.RunReverseProxy("configuration_test.json")
+    // go reverseproxy.RunReverseProxy("configurations/test_redirect_more.json")
 
 	direct_resp, direct_err := http.Get("http://127.0.0.1:8080/redirect/11")
 
@@ -47,7 +41,7 @@ func TestRedirectMoreThanThreshold(t *testing.T) {
 		log.Printf("%s", direct_err)
 	}
 
-	proxy_resp, proxy_err := http.Get("http://127.0.0.1:8081/redirect/11")
+    proxy_resp, proxy_err := http.Get("http://redirect.localhost:8081/redirect/11")
 
 	if proxy_err != nil {
 		log.Printf("%s", direct_err)

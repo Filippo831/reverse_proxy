@@ -79,13 +79,13 @@ func ReadConfiguration(filePath string) error {
 	Conf = newConf
 
 	if readingJsonErr != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return err
 	}
 	err = checks(&Conf)
 
 	if err != nil {
-		log.Fatal(err)
+        log.Print(err)
 		return err
 	}
 
