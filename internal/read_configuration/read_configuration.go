@@ -85,7 +85,7 @@ func ReadConfiguration(filePath string) error {
 	err = checks(&Conf)
 
 	if err != nil {
-        log.Print(err)
+		log.Print(err)
 		return err
 	}
 
@@ -136,11 +136,10 @@ func checkDomain(conf *Configuration) error {
 				subdomains[location.Domain] = true
 			}
 
-			locationDomainArray := strings.Split(location.Domain, ".")
-			locationDomain := locationDomainArray[len(locationDomainArray)-1]
+			locationDomainArray := strings.Split(location.Domain, server.ServerName)
 
-			if locationDomain != server.ServerName {
-				return errors.New(fmt.Sprintf("server number %d domain: %s\nlocation domain: %s\n", serverKey, server.ServerName, locationDomain))
+			if locationDomainArray[0] == location.Domain {
+				return errors.New(fmt.Sprintf("server number %d domain: %s\nlocation domain: %s\n", serverKey, server.ServerName, locationDomainArray[0]))
 			}
 		}
 	}
@@ -152,10 +151,9 @@ func checkChunks(conf *Configuration) error {
 		if server.ChunkSize < 8 && server.ChunkEncoding {
 			return errors.New(fmt.Sprintf("wrong chunk size in server %d: %dkb while lower value is 8kb\n", serverKey, server.ChunkSize))
 		}
-        if server.ChunkTimeout < 30 && server.ChunkEncoding {
+		if server.ChunkTimeout < 30 && server.ChunkEncoding {
 			return errors.New(fmt.Sprintf("wrong chunk timeout in server %d: %dms while lower value is 30ms\n", serverKey, server.ChunkTimeout))
-        }
+		}
 	}
 	return nil
 }
-

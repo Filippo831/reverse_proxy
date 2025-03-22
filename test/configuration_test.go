@@ -29,8 +29,8 @@ func TestSslDisabledWithDefinedKeys(t *testing.T) {
 func TestDifferentSubdomains(t *testing.T) {
     err := readconfiguration.ReadConfiguration("configurations/different_subdomains.json")
 
-	if fmt.Sprint(err) != "server number 0 domain: localhost\nlocation domain: gianni\n" {
-		t.Errorf("expected: server number 0 domain: localhost\nlocation domain: gianni\n found: %s", err)
+	if fmt.Sprint(err) != "server number 0 domain: localhost\nlocation domain: mario.gianni\n" {
+		t.Errorf("expected: server number 0 domain: localhost\nlocation domain: mario.gianni\n found: %s", err)
 	}
 }
 
