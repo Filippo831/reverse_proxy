@@ -49,3 +49,11 @@ func TestWrongChunkSize(t *testing.T) {
         t.Errorf("expected: wrong chunk size in server 0: 4kb while lower value is 8kb\nfound: %s", err)
 	}
 }
+
+func TestWrongChunkTimeout(t *testing.T) {
+    err := readconfiguration.ReadConfiguration("configurations/wrong_chunk_timeout.json")
+
+	if fmt.Sprint(err) != "wrong chunk timeout in server 0: 10ms while lower value is 30ms\n" {
+        t.Errorf("expected: wrong chunk timeout in server 0: 10ms while lower value is 30ms\nfound: %s", err)
+	}
+}

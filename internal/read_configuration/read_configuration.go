@@ -152,6 +152,10 @@ func checkChunks(conf *Configuration) error {
 		if server.ChunkSize < 8 && server.ChunkEncoding {
 			return errors.New(fmt.Sprintf("wrong chunk size in server %d: %dkb while lower value is 8kb\n", serverKey, server.ChunkSize))
 		}
+        if server.ChunkTimeout < 30 && server.ChunkEncoding {
+			return errors.New(fmt.Sprintf("wrong chunk timeout in server %d: %dms while lower value is 30ms\n", serverKey, server.ChunkTimeout))
+        }
 	}
 	return nil
 }
+

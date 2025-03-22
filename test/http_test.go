@@ -29,11 +29,11 @@ func TestRedirectLessThanThreshold(t *testing.T) {
 	if proxy_resp.Header.Get("Location") != direct_resp.Header.Get("Location") {
 		t.Errorf("redirect Location does not correspond\nproxy: %s\ndirect: %s\n", proxy_resp.Header.Get("Location"), direct_resp.Header.Get("Location"))
 	}
-    // close(quit)
 }
 
 func TestRedirectMoreThanThreshold(t *testing.T) {
-    // go reverseproxy.RunReverseProxy("configurations/test_redirect_more.json")
+    // go routine stanted on previous test, no need to start a new one
+    // if you can find a way to end the execution on previous scope, otherwise wathever
 
 	direct_resp, direct_err := http.Get("http://127.0.0.1:8080/redirect/11")
 
@@ -59,5 +59,4 @@ func TestRedirectMoreThanThreshold(t *testing.T) {
     if strings.TrimSpace(bodyString) != `Get "/relative-redirect/1": stopped after 10 redirects` {
 		t.Errorf(`expected output: Get "/relative-redirect/1": stopped after 10 redirects\ngot: %s`, bodyString)
 	}
-    // close(quit)
 }
