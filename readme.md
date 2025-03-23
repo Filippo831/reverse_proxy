@@ -13,7 +13,7 @@
 ...
 
 ## configurable file
-``` json
+``` js
 {
 	"servers": [
 		{
