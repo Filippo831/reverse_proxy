@@ -16,7 +16,7 @@ import (
 	"golang.org/x/net/http2"
 )
 
-func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.Server) {
+func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.Server) *http.ResponseWriter {
 	http2.ConfigureTransport(http.DefaultTransport.(*http.Transport))
 
 	client := &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -46,7 +46,6 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, err)
-		return
 	}
 
 	// resp, err := http.DefaultClient.Do(r)
@@ -93,4 +92,5 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.
 	} else {
 		io.Copy(w, resp.Body)
 	}
+    return &w
 }

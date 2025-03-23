@@ -7,7 +7,6 @@
 - [x] chunk encoding
 - [x] handle subdomains
 - [x] http2 support
-- [ ] cache
 - [ ] load balancer to avoid DDoS attacks
 - [ ] basic redirect if url not valid
 ...
