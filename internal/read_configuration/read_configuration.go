@@ -21,6 +21,9 @@ type Server struct {
 	// server base domain
 	ServerName string `json:"server_name"`
 
+    // define if http3 is active
+    Http3Active bool `json:"http3"`
+
 	// define to which server a subdomain should connect to
 	Location []Location `json:"location"`
 

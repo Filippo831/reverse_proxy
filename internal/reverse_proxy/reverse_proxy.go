@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/quic-go/quic-go/http3"
+
 	"github.com/Filippo831/reverse_proxy/internal/http_handler"
 	"github.com/Filippo831/reverse_proxy/internal/read_configuration"
 	"github.com/Filippo831/reverse_proxy/internal/run_server"
@@ -29,8 +31,6 @@ func RunReverseProxy(conf_path string) error {
 	for _, server := range readconfiguration.Conf.Http {
 
 		proxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Println(r)
-			fmt.Println("oggetto non trovato in cache")
 			redirectURL, _ := url.Parse("https://127.0.0.1:8089")
 			found := false
 
@@ -69,7 +69,13 @@ func RunReverseProxy(conf_path string) error {
 		errs := make(chan error, 1)
 		go func() {
 			log.Printf("running server under domain %s and port %d", server.ServerName, server.Port)
-			errs <- runserver.RunServer(proxy, server.Port, 5, 10, 60, server.SslCertificate, server.SslCertificateKey, server.SslToClient, &wg)
+
+			if server.Http3Active {
+				http3Server := &http3.Server{Addr: fmt.Sprintf(":%d", server.Port), Handler: proxy}
+				errs <- http3Server.ListenAndServeTLS(server.SslCertificate, server.SslCertificateKey)
+			} else {
+				errs <- runserver.RunHttp2Server(proxy, server.Port, 5, 10, 60, server.SslCertificate, server.SslCertificateKey, server.SslToClient, &wg)
+			}
 			if err := <-errs; err != nil {
 				log.Fatal(err)
 			}

@@ -9,6 +9,7 @@
 - [x] http2 support
 - [ ] load balancer to avoid DDoS attacks
 - [ ] basic redirect if url not valid
+- [ ] set default value for configuration parameters
 ...
 
 ## configurable file
@@ -18,6 +19,7 @@
 		{
 			"port": int,
 			"server_name": string,          // must be the domain
+            "http3": bool                   // if true use http3 otherwise http1 & http2
 			"ssl_to_client": bool,          // activate https from proxy to client
 			"ssl_certificate": string,      // path to ssl_certificate file
 			"ssl_certificate_key": string,  // path to ssl_certificate_key file

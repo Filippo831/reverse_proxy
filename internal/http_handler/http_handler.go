@@ -13,11 +13,10 @@ import (
 	"time"
 
 	readconfiguration "github.com/Filippo831/reverse_proxy/internal/read_configuration"
-	"golang.org/x/net/http2"
 )
 
 func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.Server) *http.ResponseWriter {
-	http2.ConfigureTransport(http.DefaultTransport.(*http.Transport))
+    fmt.Printf("%s\n", r.Proto)
 
 	client := &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 

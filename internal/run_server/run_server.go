@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-func RunServer(proxy http.HandlerFunc, port int, readTimeout int, writeTimeout int, idleTimeout int, sslCertificate string, sslKey string, sslActivate bool, wg *sync.WaitGroup) error {
+func RunHttp2Server(proxy http.HandlerFunc, port int, readTimeout int, writeTimeout int, idleTimeout int, sslCertificate string, sslKey string, sslActivate bool, wg *sync.WaitGroup) error {
 
 	if sslCertificate == "" && sslKey == "" && !sslActivate {
 		RunHttp(proxy, port, readTimeout, writeTimeout, idleTimeout, wg)
