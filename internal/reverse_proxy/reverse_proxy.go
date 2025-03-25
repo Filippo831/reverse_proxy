@@ -1,6 +1,7 @@
 package reverseproxy
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
@@ -71,13 +72,18 @@ func RunReverseProxy(conf_path string) error {
 			log.Printf("running server under domain %s and port %d", server.ServerName, server.Port)
 
 			if server.Http3Active {
-				http3Server := &http3.Server{Addr: fmt.Sprintf(":%d", server.Port), Handler: proxy}
-				errs <- http3Server.ListenAndServeTLS(server.SslCertificate, server.SslCertificateKey)
+				cert, err := tls.LoadX509KeyPair(server.SslCertificate, server.SslCertificateKey)
+				errs <- err
+
+				http3Server := http3.Server{Addr: ":8083", Handler: proxy, TLSConfig: &tls.Config{Certificates: []tls.Certificate{cert}, NextProtos: []string{"h3"}}}
+				errs <- http3Server.ListenAndServe()
+
 			} else {
 				errs <- runserver.RunHttp2Server(proxy, server.Port, 5, 10, 60, server.SslCertificate, server.SslCertificateKey, server.SslToClient, &wg)
 			}
 			if err := <-errs; err != nil {
 				log.Fatal(err)
+                return
 			}
 		}()
 	}
