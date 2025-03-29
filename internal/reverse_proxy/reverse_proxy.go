@@ -21,7 +21,19 @@ import (
 func RunReverseProxy(conf_path string) error {
 	log.Printf("starting reverse proxy\n")
 
+	/*
+	   create wait group because you can run multiple server in go routine.
+	   without waitgroup you will have a goroutine for each server but the main execution will end a so the routines
+	   with this you wait for all goroutine to end
+
+	   this is only a counter that increments when a routine is run and decrement when it ends
+	*/
 	var wg sync.WaitGroup
+
+	/*
+	   given the configuration file run a function that create a go object out of it
+	   the configuration object is a global variable in the same file read from other files
+	*/
 
 	err := readconfiguration.ReadConfiguration(conf_path)
 	if err != nil {
@@ -29,6 +41,14 @@ func RunReverseProxy(conf_path string) error {
 		return err
 	}
 
+	/*
+	   for each server defined in the configuration run this function into the loop
+
+	   LOOP TASK
+	   - given the subdomain get the server to whom send the request
+	   - build the request for the backend server
+	   - check the header and decide whether use http connection or websocket connection
+	*/
 	for _, server := range readconfiguration.Conf.Http {
 
 		proxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +72,7 @@ func RunReverseProxy(conf_path string) error {
 				return
 			}
 
+			// get request to redirect to backend server
 			redirect := http_handler.HttpRedirect(redirectURL, r)
 
 			// check if the client wants to change the connection to a websocket
@@ -71,6 +92,9 @@ func RunReverseProxy(conf_path string) error {
 		go func() {
 			log.Printf("running server under domain %s and port %d", server.ServerName, server.Port)
 
+			/*
+			   TODO: for now this is a try to make http3 work
+			*/
 			if server.Http3Active {
 				cert, err := tls.LoadX509KeyPair(server.SslCertificate, server.SslCertificateKey)
 				errs <- err
@@ -79,15 +103,20 @@ func RunReverseProxy(conf_path string) error {
 				errs <- http3Server.ListenAndServe()
 
 			} else {
+				/*
+				   run http2 server which will also work with http1
+				   it will try to use the newest protocol
+				*/
 				errs <- runserver.RunHttp2Server(proxy, server.Port, 5, 10, 60, server.SslCertificate, server.SslCertificateKey, server.SslToClient, &wg)
 			}
 			if err := <-errs; err != nil {
 				log.Fatal(err)
-                return
+				return
 			}
 		}()
 	}
 
+    // wait until every server stop running before ending the execution
 	wg.Wait()
 	return nil
 

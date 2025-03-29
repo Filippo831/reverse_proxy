@@ -1,19 +1,24 @@
 package http_handler
 
 import (
-	// "errors"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 
-	// "log"
 	"net/http"
 	"strings"
 	"time"
 
 	readconfiguration "github.com/Filippo831/reverse_proxy/internal/read_configuration"
 )
+
+/*
+handle http connections
+
+define the client that will send the request to the server with some tweaks to make
+redirect, cookies on redirect and trailers work
+*/
 
 func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.Server) *http.ResponseWriter {
     fmt.Printf("%s\n", r.Proto)
@@ -47,10 +52,8 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.
 		fmt.Fprint(w, err)
 	}
 
-	// resp, err := http.DefaultClient.Do(r)
 	for key, values := range resp.Header {
 		for _, value := range values {
-			// log.Printf("%s : %s", key, value)
 			w.Header().Add(key, value)
 		}
 	}
@@ -84,6 +87,7 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.
 
 	w.WriteHeader(resp.StatusCode)
 
+    // use chunk writing if defined in the configuration
 	if conf.ChunkEncoding {
 		chunkedWriter := ChunkedWriter(w, conf)
 		io.Copy(chunkedWriter, resp.Body)

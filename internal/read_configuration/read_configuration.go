@@ -21,8 +21,8 @@ type Server struct {
 	// server base domain
 	ServerName string `json:"server_name"`
 
-    // define if http3 is active
-    Http3Active bool `json:"http3"`
+	// define if http3 is active
+	Http3Active bool `json:"http3"`
 
 	// define to which server a subdomain should connect to
 	Location []Location `json:"location"`
@@ -59,6 +59,11 @@ type Location struct {
 
 var Conf Configuration
 
+/*
+read json file and crate an object out of it
+then make the object public to give access to read the configuration from other modules
+*/
+
 func ReadConfiguration(filePath string) error {
 
 	jsonFile, err := os.Open(filePath)
@@ -85,6 +90,8 @@ func ReadConfiguration(filePath string) error {
 		log.Print(err)
 		return err
 	}
+
+	// run some checks to make sure the file is written correctly
 	err = checks(&Conf)
 
 	if err != nil {
@@ -113,21 +120,26 @@ func checks(conf *Configuration) error {
 	return nil
 }
 
+/*
+- check if there are keys defined when ssl to client is active
+- check if keys are defined but ssl to client is not active
+*/
 func checkKeys(conf *Configuration) error {
 	for key, server := range conf.Http {
 		if server.SslToClient && (server.SslCertificate == "" || server.SslCertificateKey == "") {
-			// log.Printf("missing ssl parameter(s) in server %d", key)
 			return errors.New(fmt.Sprintf("missing ssl parameter(s) in server %d", key))
 
 		}
 		if !server.SslToClient && (server.SslCertificate != "" || server.SslCertificateKey != "") {
-			// log.Printf("ssl parameters set even if ssl is selected to false in server %d", key)
 			return errors.New(fmt.Sprintf("ssl parameters set even if ssl is selected to false in server %d", key))
 		}
 	}
 	return nil
 }
 
+/*
+- check if there are multiple backend server attached to the same subdomain
+*/
 func checkDomain(conf *Configuration) error {
 	for serverKey, server := range conf.Http {
 		subdomains := make(map[string]bool)
@@ -149,6 +161,10 @@ func checkDomain(conf *Configuration) error {
 	return nil
 }
 
+
+/*
+- make sure that the chunking encoding parameters are set properly respecting the boundries
+*/
 func checkChunks(conf *Configuration) error {
 	for serverKey, server := range conf.Http {
 		if server.ChunkSize < 8 && server.ChunkEncoding {
