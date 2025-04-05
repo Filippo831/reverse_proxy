@@ -1,0 +1,14 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    volumes:
+      - "./configuration.json:/configuration.json"
+    depends_on:
+      test_server:
+        condition: service_started
+
+  test_server:
+    image: "kennethreitz/httpbin"

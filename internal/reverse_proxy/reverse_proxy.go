@@ -2,6 +2,7 @@ package reverseproxy
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -51,6 +52,7 @@ func RunReverseProxy(conf_path string) error {
 	for _, server := range readconfiguration.Conf.Http {
 
 		proxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 			redirectURL, _ := url.Parse("https://127.0.0.1:8089")
 			found := false
 
@@ -83,33 +85,42 @@ func RunReverseProxy(conf_path string) error {
 
 		})
 
-		// every server adds 1 to this counter to keep track of how many go routine are running
-
 		// run the server in a goroutine
 		errs := make(chan error, 1)
 
 		if server.Http3Active {
-            wg.Add(2)
+			wg.Add(2)
 			log.Printf("running server under domain %s and port %d", server.ServerName, server.Port)
 
-			http3Server := http3.Server{Addr: ":8083", Handler: proxy}
+			// http3Server := http3.Server{Addr: ":8083", Handler: proxy}
 
-			http2Server := http.Server{Addr: ":8083", Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				errs <- http3Server.SetQUICHeaders(w.Header())
-				proxy.ServeHTTP(w, r)
+			// http2Server := http.Server{Addr: ":8083", Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// 	errs <- http3Server.SetQUICHeaders(w.Header())
+			// 	proxy.ServeHTTP(w, r)
+			// })}
+
+			http3Server := &http3.Server{Addr: ":8083", Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Printf("arrivata una richiesta a http3\n")
+				io.WriteString(w, "http3\n")
+			})}
+
+			http2Server := &http.Server{Addr: ":8083", Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Printf("arrivata una richiesta a http2\n")
+				w.Header().Set("Alt-Svc", `h3=":8083"; ma=86400`)
+				io.WriteString(w, "http2\n")
 			})}
 
 			go func() {
-                defer wg.Done()
-				errs <- http3Server.ListenAndServeTLS(server.SslCertificate, server.SslCertificateKey)
+				defer wg.Done()
+				errs <- http2Server.ListenAndServeTLS(server.SslCertificate, server.SslCertificateKey)
 				if err := <-errs; err != nil {
 					log.Fatal(err)
 					return
 				}
 			}()
 			go func() {
-                defer wg.Done()
-				errs <- http2Server.ListenAndServeTLS(server.SslCertificate, server.SslCertificateKey)
+				defer wg.Done()
+				errs <- http3Server.ListenAndServeTLS(server.SslCertificate, server.SslCertificateKey)
 				if err := <-errs; err != nil {
 					log.Fatal(err)
 					return
@@ -117,13 +128,13 @@ func RunReverseProxy(conf_path string) error {
 			}()
 
 		} else {
-            wg.Add(1)
-            /*
-               run http2 server which will also work with http1
-               it will try to use the newest protocol
-            */
+			wg.Add(1)
+			/*
+			   run http2 server which will also work with http1
+			   it will try to use the newest protocol
+			*/
 			go func() {
-                defer wg.Done()
+				defer wg.Done()
 				log.Printf("running server under domain %s and port %d", server.ServerName, server.Port)
 				errs <- runserver.RunHttp2Server(proxy, server.Port, 5, 10, 60, server.SslCertificate, server.SslCertificateKey, server.SslToClient, &wg)
 				if err := <-errs; err != nil {
