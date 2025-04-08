@@ -7,9 +7,8 @@
 - [x] chunk encoding
 - [x] handle subdomains
 - [x] http2 support
-- [ ] load balancer to avoid DDoS attacks
-- [ ] basic redirect if url not valid
-- [ ] set default value for configuration parameters
+- [x] http3-ish support
+- [x] logging (log_file.txt)
 
 
 ## configurable file

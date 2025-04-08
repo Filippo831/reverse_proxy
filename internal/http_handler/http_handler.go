@@ -85,8 +85,6 @@ func HttpHandler(w http.ResponseWriter, r *http.Request, conf readconfiguration.
 		w.WriteHeader(resp.StatusCode)
 	}
 
-	w.WriteHeader(resp.StatusCode)
-
     // use chunk writing if defined in the configuration
 	if conf.ChunkEncoding {
 		chunkedWriter := ChunkedWriter(w, conf)

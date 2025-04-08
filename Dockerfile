@@ -1,15 +1,22 @@
-FROM golang
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
+# Copy go mod files and download dependencies
 COPY go.mod go.sum ./
-
 RUN go mod download
 
-COPY *.go ./
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /reverse_proxy
+RUN go build -o /reverse_proxy ./cmd/reverse_proxy
 
-EXPOSE 8081 8082
+FROM alpine:latest
 
-CMD ["/reverse_proxy"]
+COPY --from=builder /reverse_proxy /reverse_proxy
+
+EXPOSE 8081
+EXPOSE 8082
+
+ENTRYPOINT ["/reverse_proxy"]
+

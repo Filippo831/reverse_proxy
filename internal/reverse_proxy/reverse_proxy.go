@@ -2,7 +2,6 @@ package reverseproxy
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -89,25 +88,30 @@ func RunReverseProxy(conf_path string) error {
 		errs := make(chan error, 1)
 
 		if server.Http3Active {
+
+			/*
+				HTTP3 SERVER
+
+				when Http3Active is true, create 2 parallel server on the same port (since 2 different
+				protocols are used: UDP for HTTP/3 and TCP/IP for HTTP2). When the first request arrives
+				inform the client that http3 is available with the "Alt-Svc" header
+
+				alt-svc h3=":$PORT"; ma=86400
+
+				ma=$SECONDS -> time to keep the information alive, after this time the client will make a http/2 request again
+
+				FIX:
+				--- http/3 works only if you craft the request for http/3, the switch does not work ---
+
+			*/
 			wg.Add(2)
 			log.Printf("running server under domain %s and port %d", server.ServerName, server.Port)
 
-			// http3Server := http3.Server{Addr: ":8083", Handler: proxy}
+			http3Server := http3.Server{Addr: fmt.Sprintf(":%d", server.Port), Handler: proxy}
 
-			// http2Server := http.Server{Addr: ":8083", Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// 	errs <- http3Server.SetQUICHeaders(w.Header())
-			// 	proxy.ServeHTTP(w, r)
-			// })}
-
-			http3Server := &http3.Server{Addr: ":8083", Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				fmt.Printf("arrivata una richiesta a http3\n")
-				io.WriteString(w, "http3\n")
-			})}
-
-			http2Server := &http.Server{Addr: ":8083", Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				fmt.Printf("arrivata una richiesta a http2\n")
-				w.Header().Set("Alt-Svc", `h3=":8083"; ma=86400`)
-				io.WriteString(w, "http2\n")
+			http2Server := http.Server{Addr: fmt.Sprintf(":%d", server.Port), Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Alt-Svc", fmt.Sprintf(`h3=":%d"; ma=86400`, server.Port))
+				proxy.ServeHTTP(w, r)
 			})}
 
 			go func() {
