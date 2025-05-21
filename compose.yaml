@@ -1,4 +1,3 @@
-version: "1.0"
 services:
   web:
     build: .
@@ -6,14 +5,10 @@ services:
       - "8081:8081"
       - "8082:8082"
     volumes:
-      - "./configuration.json:/configuration_docker.json"
+      - "./configuration_docker.json:/configuration.json"
       - "./reverse_proxy.com+3.pem:/reverse_proxy.com+3.pem"
       - "./reverse_proxy.com+3-key.pem:/reverse_proxy.com+3-key.pem"
       - "./log_file.log:/log_file.log"
-
-    # depends_on:
-    #   test_server:
-    #     condition: service_started
 
   testserver:
     image: "kennethreitz/httpbin"

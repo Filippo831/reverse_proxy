@@ -2,14 +2,13 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Copy go mod files and download dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY cmd/ ./cmd/
+COPY cmd/reverse_proxy/main.go ./main.go
 COPY internal/ ./internal/
 
-RUN go build -o /reverse_proxy ./cmd/reverse_proxy
+RUN go build -o /reverse_proxy 
 
 FROM alpine:latest
 
