@@ -11,7 +11,21 @@
 - [x] logging (log_file.txt)
 
 
-## configurable file
+# usage
+## docker
+- clone the repository
+```
+git clone https://github.com/Filippo831/reverse_proxy.git
+```
+- generate a locally trusted development certificate via **mkcert**
+```
+mkcert -cert-file reverse_proxy.com.pem -key-file reverse_proxy.com-key.pem localhost "*.localhost" ::1
+```
+- create the configuration file *configuration.json*. Write the configuration using the structure below (example after the structure)
+```
+touch configuration.json
+```
+### configurable file
 ``` js
 {
     "servers": [
@@ -34,5 +48,43 @@
             ]
         }
     ]
+}
+```
+### example configuration
+This is a simple configuration that creates 2 servers, 
+``` js
+{
+  "servers": [
+    {
+      "port": 8081,
+      "ssl_to_client": false,
+      "server_name": "localhost",
+      "chunk_encoding": true,
+      "chunk_size": 64,
+      "chunk_timeout": 200,
+      "location": [
+        {
+          "domain": "localhost",
+          "to": "http://127.0.0.1:8080"
+        }
+      ]
+    },
+    {
+      "port": 8082,
+      "ssl_to_client": true,
+      "ssl_certificate": "reverse_proxy.com.pem",
+      "ssl_certificate_key": "reverse_proxy.com-key.pem",
+      "server_name": "localhost",
+      "chunk_encoding": true,
+      "chunk_size": 64,
+      "chunk_timeout": 200,
+      "location": [
+        {
+          "domain": "localhost",
+          "to": "http://127.0.0.1:8080"
+        }
+      ]
+    }
+  ]
 }
 ```

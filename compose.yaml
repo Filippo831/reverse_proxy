@@ -1,5 +1,5 @@
 services:
-  web:
+  reverse:
     build: .
     ports:
       - "8081:8081"
@@ -14,3 +14,9 @@ services:
     image: "kennethreitz/httpbin"
     ports:
       - "8080:80"
+
+  ubuntu:
+    container_name: ubuntu
+    image: ubuntu
+    restart: on-failure
+    command: ["sleep","infinity"]
