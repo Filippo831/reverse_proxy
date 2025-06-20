@@ -11,8 +11,7 @@
 - [x] logging (log_file.txt)
 
 
-# usage
-## docker
+## docker setup (with testing environment setup example)
 - clone the repository
 ```
 git clone https://github.com/Filippo831/reverse_proxy.git
@@ -21,9 +20,9 @@ git clone https://github.com/Filippo831/reverse_proxy.git
 ```
 mkcert -cert-file reverse_proxy.com.pem -key-file reverse_proxy.com-key.pem localhost "*.localhost" ::1
 ```
-- create the configuration file *configuration.json*. Write the configuration using the structure below (example after the structure)
+- create the configuration file *configuration.json* and the log file *log_file.log*. Modify *configuration.json* to write the configuration following the structure below (configuration example after the structure)
 ```
-touch configuration.json
+touch configuration.json log_file.log
 ```
 ### configurable file
 ``` js
@@ -51,7 +50,9 @@ touch configuration.json
 }
 ```
 ### example configuration
-This is a simple configuration that creates 2 servers, 
+This is a simple configuration that creates 2 servers, a non-encrypted at port 8081 and one encrypted at port 8082.
+- http://localhost:8081 -> http://127.0.0.1:8080
+- https://localhost:8082 -> http://127.0.0.1:8080
 ``` js
 {
   "servers": [
@@ -80,11 +81,39 @@ This is a simple configuration that creates 2 servers,
       "chunk_timeout": 200,
       "location": [
         {
-          "domain": "localhost",
-          "to": "http://127.0.0.1:8080"
+            "domain": "localhost",
+            "to": "http://testserver:80"
         }
       ]
     }
   ]
 }
+```
+- create a *compose.yaml* file
+```
+touch compose.yaml
+```
+- Modify *compose.yaml* to run the desired services. Here there is a compose file example for testing purposes.
+```
+services:
+  reverse:
+    build: .
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    volumes:
+      - "./configuration.json:/configuration.json"
+      - "./reverse_proxy.com.pem:/reverse_proxy.com.pem"
+      - "./reverse_proxy.com-key.pem:/reverse_proxy.com-key.pem"
+      - "./log_file.log:/log_file.log"
+
+  testserver:
+    image: "kennethreitz/httpbin"
+    ports:
+      - "8080:80"
+```
+
+- run the containers
+```
+docker compose up
 ```
