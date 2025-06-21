@@ -41,7 +41,7 @@ touch configuration.json log_file.log
             "chunk_timeout": int,           // time in ms before chunk is sent (min 30ms)
             "location": [                   // this needs to be an array
                 {
-                    "subdomain": string,    // define which subdomain redirect to "to"
+                    "subdomain.domain": string,    // define which subdomain redirect to "to"
                     "to": string            // server to call when subdomain used
                 },
             ]
@@ -52,7 +52,9 @@ touch configuration.json log_file.log
 ### example configuration
 This is a simple configuration that creates 2 servers, a non-encrypted at port 8081 and one encrypted at port 8082.
 - http://localhost:8081 -> http://testserver:80
+- http://google.localhost:8081 -> http://www.google.com
 - https://localhost:8082 -> http://testserver:80
+- https://google.localhost:8082 -> http://www.google.com
 ``` js
 {
   "servers": [
@@ -67,7 +69,12 @@ This is a simple configuration that creates 2 servers, a non-encrypted at port 8
         {
           "domain": "localhost",
           "to": "http://127.0.0.1:8080"
+        },
+        {
+          "domain": "google.localhost",
+          "to": "https://www.google.com/"
         }
+
       ]
     },
     {
@@ -83,6 +90,10 @@ This is a simple configuration that creates 2 servers, a non-encrypted at port 8
         {
             "domain": "localhost",
             "to": "http://testserver:80"
+        },
+        {
+          "domain": "google.localhost",
+          "to": "https://www.google.com/"
         }
       ]
     }
