@@ -51,8 +51,8 @@ touch configuration.json log_file.log
 ```
 ### example configuration
 This is a simple configuration that creates 2 servers, a non-encrypted at port 8081 and one encrypted at port 8082.
-- http://localhost:8081 -> http://127.0.0.1:8080
-- https://localhost:8082 -> http://127.0.0.1:8080
+- http://localhost:8081 -> http://testserver:80
+- https://localhost:8082 -> http://testserver:80
 ``` js
 {
   "servers": [
